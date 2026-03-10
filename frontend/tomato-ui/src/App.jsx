@@ -2,7 +2,6 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import './App.css'
 
 const API_URL = 'http://127.0.0.1:8000/predict'
-const GEMINI_API_KEY = 'AIzaSyBvtToZeTXHbphmDoKPYJi2DZLtxqg67VA'
 
 function formatClass(raw = '') {
   return raw.replace(/^Tomato___/, '').replaceAll('_', ' ')
