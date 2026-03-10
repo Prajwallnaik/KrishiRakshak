@@ -1,0 +1,77 @@
+/* ═══════════════════════════════════════
+   index.css — Global tokens & reset
+   ═══════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Backgrounds */
+  --bg: #FFFFFF;
+  --surface: #F8F9FA;
+  --card: #FFFFFF;
+  --card-lt: #F5F7FA;
+  --off-white: #F9FAFB;
+  --white: #FFFFFF;
+
+  /* Text */
+  --text-dark: #111827;
+  /* Near black for headings */
+  --text-mid: #374151;
+  /* Dark gray for body */
+  --text-sub: #6B7280;
+  /* Lighter gray for secondary text */
+
+  /* Borders & Shadows */
+  --border: #E5E7EB;
+  --border-lt: #F3F4F6;
+  --shadow-sm: 0px 2px 4px rgba(0, 0, 0, 0.02);
+  --shadow-md: 0px 4px 12px rgba(0, 0, 0, 0.05);
+
+  /* Accents */
+  --accent: #c97b3a;
+  /* Warm amber */
+  --accent2: #5a3e2b;
+  /* Deep desert earth */
+  --green: #10B981;
+  --rose: #EF4444;
+
+  /* Glow - adapted for light mode */
+  --glow-blue: rgba(201, 123, 58, 0.15);
+  --glow-purple: rgba(90, 62, 43, 0.08);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #faf8f5;
+  /* Warm off-white base */
+  background-image:
+    radial-gradient(at 0% 0%, rgba(225, 205, 166, 0.4) 0px, transparent 50%),
+    /* light sand */
+    radial-gradient(at 100% 0%, rgba(220, 179, 143, 0.45) 0px, transparent 50%),
+    /* warm tan */
+    radial-gradient(at 0% 100%, rgba(204, 155, 108, 0.3) 0px, transparent 50%),
+    /* dusty orange */
+    radial-gradient(at 100% 100%, rgba(234, 234, 235, 0.5) 0px, transparent 50%);
+  /* subtle greyish sand */
+  background-attachment: fixed;
+  color: var(--text-mid);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: rgba(201, 123, 58, 0.2);
+}
