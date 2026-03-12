@@ -184,6 +184,14 @@ The KrishiRakshak API follows RESTful principles and serves two primary endpoint
 
 ---
 
+## Future Roadmap
+
+- **Grad-CAM Integration**: Implementation of visual saliency maps to highlight the exact regions of the leaf that led to the model's pathology classification (Explainable AI).
+- **Multi-Crop Expansion**: Scaling the architecture to support additional crop strains beyond tomatoes.
+- **Edge Deployment**: Compiling the model via TorchScript or ONNX for on-device inference without backend reliance.
+
+---
+
 ## Engineering Standards
 
 To ensure production-grade reliability, the project adheres to the following standards:
