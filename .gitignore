@@ -173,5 +173,3 @@ mlruns/
 notebooks/
 venv_pytorch/
 ps1
-api/
-config/
