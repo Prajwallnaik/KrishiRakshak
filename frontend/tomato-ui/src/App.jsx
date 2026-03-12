@@ -414,7 +414,7 @@ export default function App() {
       </div >
 
       {/* ── HERO with parallax depth ── */}
-      < section className="hero" ref={heroRef} >
+      <section className="hero" ref={heroRef} >
         <Starfield scrollY={scrollY} />
         <div className="hero-content">
 
@@ -450,10 +450,10 @@ export default function App() {
       </section >
 
       {/* ── MARQUEE TICKER ── */}
-      < Marquee />
+      <Marquee />
 
       {/* ── ABOUT SECTION with cinematic reveals ── */}
-      < section className="about-section" id="about" >
+      <section className="about-section" id="about" >
         <div className="about-inner">
           <div className="about-header">
             <div className="section-eyebrow reveal-blur" style={{ color: '#c97b3a' }}>About KrishiRakshak AI</div>
@@ -609,7 +609,7 @@ export default function App() {
       {/* ── STATS BAND REMOVED ── */}
 
       {/* ── UPLOAD SECTION with perspective tilt ── */}
-      < section className="upload-section" id="analyse" >
+      <section className="upload-section" id="analyse" >
         <div className="section-inner">
           <div className="section-eyebrow-lt reveal-blur">Disease Detection</div>
           <h2 className="section-title reveal-blur">
