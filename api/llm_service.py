@@ -61,8 +61,10 @@ def get_fallback_recommendation(disease_name: str) -> dict:
 
 def get_treatment_recommendations(disease_name: str) -> dict:
     """
-    Requests a structured JSON response from OpenAI containing 
-    treatment advice for a specific tomato plant disease via REST API.
+    Requests a structured JSON response from OpenRouter containing 
+    treatment advice for a specific tomato plant disease.
+    Uses mistralai/mistral-7b-instruct via the OpenRouter API.
+    Falls back to a local dictionary if the API is unavailable.
     """
     if not disease_name or disease_name.lower() == "healthy":
         return get_fallback_recommendation("healthy")
@@ -80,35 +82,38 @@ def get_treatment_recommendations(disease_name: str) -> dict:
     }}
     """
 
+    api_key = settings.OPENROUTER_API_KEY
+    if not api_key:
+        print("OPENROUTER_API_KEY not set. Using fallback dictionary.")
+        return get_fallback_recommendation(disease_name)
+
     try:
-        url = "https://api.openai.com/v1/chat/completions"
+        url = "https://openrouter.ai/api/v1/chat/completions"
         headers = {
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {settings.OPENAI_API_KEY}'
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+            "HTTP-Referer": "http://localhost:5173",   # Required by OpenRouter
+            "X-Title": "KrishiRakshak"                 # Optional, shown in dashboard
         }
         payload = {
-            "model": "gpt-4o-mini",
+            "model": "openai/gpt-oss-20b:free",
             "messages": [
                 {"role": "user", "content": prompt}
             ]
         }
         
-        response = requests.post(
-            url, 
-            headers=headers, 
-            json=payload
-        )
+        response = requests.post(url, headers=headers, json=payload, timeout=30)
         
         if response.status_code == 429:
-            print("OpenAI API Rate Limit Exceeded (429). Using fallback dictionary.")
+            print("OpenRouter Rate Limit Exceeded (429). Using fallback dictionary.")
             return get_fallback_recommendation(disease_name)
             
         response.raise_for_status()
         
         data = response.json()
-        text = data['choices'][0]['message']['content'].strip()
+        text = data["choices"][0]["message"]["content"].strip()
         
-        # Clean up in case the LLM wrapped it in markdown json block
+        # Clean up in case the LLM wrapped output in a markdown code block
         if text.startswith("```json"):
             text = text[7:]
         if text.startswith("```"):
@@ -120,14 +125,12 @@ def get_treatment_recommendations(disease_name: str) -> dict:
         
         result_data = json.loads(text)
         
-        # Ensure all keys exist
         return {
             "symptoms": result_data.get("symptoms", "Data unavailable."),
-            "causes": result_data.get("causes", "Data unavailable."),
-            "organic": result_data.get("organic", "Data unavailable."),
+            "causes":   result_data.get("causes",   "Data unavailable."),
+            "organic":  result_data.get("organic",  "Data unavailable."),
             "chemical": result_data.get("chemical", "Data unavailable.")
         }
     except Exception as e:
         print(f"Error fetching LLM recommendations: {str(e)}. Using fallback dictionary.")
-        # Fallback if the API fails or JSON parsing fails
         return get_fallback_recommendation(disease_name)

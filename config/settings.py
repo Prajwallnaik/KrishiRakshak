@@ -22,15 +22,15 @@ class Settings:
     ]
 
     # Model Paths
-    MODEL_DIR: Path = BASE_DIR / "api" / "models"
+    MODEL_DIR: Path = BASE_DIR / "models"
     MODEL_PATH: Path = MODEL_DIR / "mobilenetv2_model.pth"
     CLASS_INDICES_PATH: Path = MODEL_DIR / "class_indices.json"
 
     # External APIs
-    # We load from .env. The hardcoded fallback is now a placeholder for security.
-    OPENAI_API_KEY: str = os.getenv(
-        "OPENAI_API_KEY", 
-        "your_openai_api_key_here"
+    # OpenRouter key loaded from .env
+    OPENROUTER_API_KEY: str = os.getenv(
+        "OPENROUTER_API_KEY",
+        ""
     )
 
 settings = Settings()

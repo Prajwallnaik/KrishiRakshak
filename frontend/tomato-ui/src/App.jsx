@@ -277,7 +277,7 @@ function Marquee() {
   const items = [
     'Smart Plant Care', '10 Plant Conditions', 'Highly Accurate',
     'Quick Detection', 'Simple Explanations', 'Real-time Diagnosis',
-    'Farmer Friendly', 'Instant Results', 'KrishiRakshak AI'
+    'Farmer Friendly', 'Instant Results', 'Samatva Krishi AI'
   ]
   const track = items.concat(items).map((text, i) => (
     <span className="marquee-item" key={i}>
@@ -314,6 +314,12 @@ export default function App() {
   const heroRef = useRef()
   useCinematicReveal()
 
+  const triggerHaptic = () => {
+    if (typeof window !== 'undefined' && window.navigator && window.navigator.vibrate) {
+      window.navigator.vibrate(50);
+    }
+  };
+
   /* ── Navbar scroll state ── */
   const navScrolled = scrollY > 80
   const scrollPercent = Math.min(scrollY / (document.documentElement.scrollHeight - window.innerHeight || 1), 1)
@@ -332,19 +338,23 @@ export default function App() {
 
     setRecLoading(true)
     try {
-      // Hit our new backend endpoint which securely calls Gemini
-      const res = await fetch(`http://localhost:8000/recommend/${encodeURIComponent(disease)}`)
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 35000)
+      const res = await fetch(
+        `http://localhost:8000/recommend/${encodeURIComponent(disease)}`,
+        { signal: controller.signal }
+      )
+      clearTimeout(timer)
       if (!res.ok) throw new Error('Failed to fetch recommendations from backend')
-
       const data = await res.json()
       setRecommendations(data)
     } catch (e) {
       console.error('LLM Error:', e)
       setRecommendations({
-        symptoms: "Error fetching live recommendations.",
-        causes: "Connection issue with the local backend.",
-        organic: "Please consult a local agricultural expert.",
-        chemical: "Check pesticide labels for target diseases."
+        symptoms: "Could not load live data — showing offline advice.",
+        causes: "Connection issue or timeout with the recommendation service.",
+        organic: "Please consult a local agricultural expert for organic options.",
+        chemical: "Check pesticide labels for the detected disease."
       })
     } finally {
       setRecLoading(false)
@@ -372,6 +382,8 @@ export default function App() {
       const data = await res.json()
       setResult(data)
       setTimeout(() => document.getElementById('results')?.scrollIntoView({ behavior: 'smooth' }), 80)
+      // Auto-fetch AI recommendations right after diagnosis
+      fetchRecommendations(formatClass(data.predicted_class))
     } catch (e) {
       setError(e.message || 'Could not reach the API — make sure the server is on port 8000.')
     } finally { setLoading(false) }
@@ -391,24 +403,23 @@ export default function App() {
 
   return (
     <>
-      <CustomCursor />
       {/* ── NAVBAR — Premium Liquid Glass ── */}
       <div style={{ position: 'fixed', top: 24, width: '100%', display: 'flex', justifyContent: 'center', zIndex: 200 }}>
         <nav className="glass-nav">
           {/* Brand Logo */}
           <div className="nav-brand">
             <img
-              src="https://freepnglogo.com/images/all_img/1723808808meta-logo-transparent-PNG.png"
-              alt="KrishiRakshak logo"
+              src="/logo.jpeg"
+              alt="Samatva Krishi logo"
               className="nav-logo-img"
             />
-            <span className="nav-brand-name">KrishiRakshak</span>
+            <span className="nav-brand-name">Samatva Krishi</span>
           </div>
           <div className="nav-divider" />
           <ul className="nav-list">
-            <li><a href="#about" className={`nav-item ${activeNav === 'about' ? 'active' : ''}`} onClick={scrollTo('about')}>About</a></li>
-            <li><a href="#analyse" className={`nav-item ${activeNav === 'analyse' ? 'active' : ''}`} onClick={scrollTo('analyse')}>Analyse</a></li>
-            {result && <li><a href="#results" className={`nav-item ${activeNav === 'results' ? 'active' : ''}`} onClick={scrollTo('results')}>Results</a></li>}
+            <li><a href="#about" className={`nav-item ${activeNav === 'about' ? 'active' : ''}`} onClick={(e) => { triggerHaptic(); scrollTo('about')(e); }}>About</a></li>
+            <li><a href="#analyse" className={`nav-item ${activeNav === 'analyse' ? 'active' : ''}`} onClick={(e) => { triggerHaptic(); scrollTo('analyse')(e); }}>Analyse</a></li>
+            {result && <li><a href="#results" className={`nav-item ${activeNav === 'results' ? 'active' : ''}`} onClick={(e) => { triggerHaptic(); scrollTo('results')(e); }}>Results</a></li>}
           </ul>
         </nav>
       </div >
@@ -426,16 +437,17 @@ export default function App() {
           </h1>
           <p className="hero-sub reveal-blur" style={{ transform: `translateY(${scrollY * 0.18}px)` }}>
             One photograph. Ten conditions. Instant answers.<br />
-            Upload a leaf photo and our system instantly identifies the problem, helping you protect your harvest.
+            Upload a leaf photo and our system instantly identifies<br />
+            the problem, helping you protect your harvest.
           </p>
           <div className="hero-actions" style={{ transform: `translateY(${scrollY * 0.22}px)` }}>
             <Magnetic>
-              <button className="btn-hero solid" onClick={scrollTo('analyse')}>
+              <button className="btn-hero solid" onClick={(e) => { triggerHaptic(); scrollTo('analyse')(e); }}>
                 Analyse a Leaf →
               </button>
             </Magnetic>
             <Magnetic>
-              <button className="btn-hero ghost" onClick={scrollTo('about')}>
+              <button className="btn-hero ghost" onClick={(e) => { triggerHaptic(); scrollTo('about')(e); }}>
                 Learn more
               </button>
             </Magnetic>
@@ -452,152 +464,163 @@ export default function App() {
       {/* ── MARQUEE TICKER ── */}
       <Marquee />
 
-      {/* ── ABOUT SECTION with cinematic reveals ── */}
       <section className="about-section" id="about" >
         <div className="about-inner">
           <div className="about-header">
-            <div className="section-eyebrow reveal-blur" style={{ color: '#c97b3a' }}>About KrishiRakshak AI</div>
             <h2 className="about-title reveal-blur">
-              What is KrishiRakshak,<br />
-              <span className="grad">and what can it do?</span>
+              What is Samatva Krishi,<br />
+              <span style={{ color: '#10b981' }}>and what can it do?</span>
             </h2>
             <p className="about-sub reveal-blur">
-              KrishiRakshak AI is a smart plant disease detection tool. Upload a photo of a
-              tomato leaf and the app instantly tells you whether the plant is healthy or
-              identifies the problem — helping farmers and gardeners act faster and more accurately.
+              Samatva Krishi AI is a smart plant disease detection tool. Upload a<br/>
+              photo of a tomato leaf and the app instantly tells you whether the plant<br/>
+              is healthy or identifies the problem — helping farmers and gardeners<br/>
+              act faster and more accurately.
             </p>
           </div>
 
-          {/* Feature cards — staggered scale reveal */}
           <div className="tech-grid reveal-scale" data-stagger="">
             {[
               {
-                svg: (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
-                    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                icon: (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="24" height="24">
+                    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /><path d="M12 2a10 10 0 1 0 10 10" strokeDasharray="4 4"/>
                   </svg>
                 ),
-                color: '#c97b3a', bg: 'rgba(210,140,60,.12)', border: 'rgba(210,140,60,.22)',
                 label: 'Fast Results',
                 desc: 'Receive a precise diagnosis within seconds of uploading — no expertise or lab required.',
               },
               {
-                svg: (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
+                icon: (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="24" height="24">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                   </svg>
                 ),
-                color: '#b07040', bg: 'rgba(190,120,60,.10)', border: 'rgba(190,120,60,.20)',
                 label: 'Wide Coverage',
                 desc: 'Detects 10 distinct tomato leaf conditions — from early blight to mosaic virus — in one analysis.',
               },
               {
-                svg: (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
-                    <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                icon: (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="24" height="24">
+                    <path d="M2 22L12 12M2 22H12M2 22V12"/><path d="M12 12c0-5.523 4.477-10 10-10v10c0 5.523-4.477 10-10 10s-10-4.477-10-10h10z"/>
                   </svg>
                 ),
-                color: '#d4863a', bg: 'rgba(212,134,58,.12)', border: 'rgba(212,134,58,.22)',
                 label: 'Treatment Plan',
                 desc: 'Get clear, step-by-step guidance on both organic and chemical treatment options for your crop.',
               },
               {
-                svg: (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                    <polyline points="22 4 12 14.01 9 11.01" />
+                icon: (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="24" height="24">
+                    <circle cx="12" cy="12" r="10" /><polyline points="9 12 11 14 15 10" />
                   </svg>
                 ),
-                color: '#6aab5e', bg: 'rgba(100,180,90,.10)', border: 'rgba(100,180,90,.22)',
                 label: 'Confidence Score',
                 desc: 'Every diagnosis includes a reliability percentage so you know exactly how trustworthy the result is.',
               },
-            ].map(({ svg, color, bg, border, label, desc }) => (
-              <TiltCard className="tech-card reveal-child" key={label}>
+            ].map(({ icon, label, desc }) => (
+              <TiltCard className="tech-card reveal-child" key={label} onClick={triggerHaptic}>
                 <div className="tech-card-content">
-                  <div className="tech-icon" style={{ color, background: bg, border: `1px solid ${border}` }}>
-                    {svg}
+                  <div className="tech-icon-v2">
+                    {icon}
                   </div>
-                  <div className="tech-label">{label}</div>
-                  <div className="tech-desc">{desc}</div>
+                  <div className="tech-label-v2">{label}</div>
+                  <div className="tech-desc-v2">{desc}</div>
                 </div>
-                <div className="tech-card-glow" style={{ background: bg }} />
               </TiltCard>
             ))}
           </div>
 
-          {/* How to use — redesigned with icon badges */}
-          <div className="pipeline reveal-left">
-            <div className="pipeline-header">
-              <div className="pipeline-eyebrow">How to use KrishiRakshak AI</div>
-            </div>
-            <div className="pipeline-steps-v2">
-              {[
-                {
-                  num: '01',
-                  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18"><rect x="3" y="3" width="18" height="18" rx="3" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>,
-                  title: 'Photograph your leaf',
-                  body: 'Take a clear, well-lit photo of a single tomato leaf — JPEG or PNG format.',
-                },
-                {
-                  num: '02',
-                  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>,
-                  title: 'Upload your image',
-                  body: 'Drag the photo into the upload zone, or simply click to browse from your device.',
-                },
-                {
-                  num: '03',
-                  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>,
-                  title: 'Run the analysis',
-                  body: 'Hit Analyse — our model identifies the condition from 10 possible diagnoses in seconds.',
-                },
-                {
-                  num: '04',
-                  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>,
-                  title: 'Review your treatment plan',
-                  body: 'Receive a full report with the disease name, confidence score, and recommended action steps.',
-                },
-              ].map(({ num, icon, title, body }, idx, arr) => (
-                <div className="pipeline-step-v2 reveal-child" key={num}>
-                  <div className="psv2-left">
-                    <div className="psv2-badge">
-                      {icon}
-                    </div>
-                    {idx < arr.length - 1 && <div className="psv2-connector" />}
-                  </div>
-                  <div className="psv2-body">
-                    <div className="psv2-num">{num}</div>
-                    <div className="psv2-title">{title}</div>
-                    <div className="psv2-desc">{body}</div>
-                  </div>
+          <div className="how-to-section reveal-blur">
+            <div className="how-to-inner">
+              <div className="pipeline-header">
+                <div className="pipeline-eyebrow-v2">
+                  <div className="eyebrow-line" />
+                  HOW TO USE SAMATVA KRISHI AI
                 </div>
-              ))}
+                <div className="dot-pattern" />
+              </div>
+
+              <div className="pipeline-content">
+                <div className="pipeline-steps-v3">
+                  {[
+                    {
+                      num: '01',
+                      icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="3" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>,
+                      title: 'Photograph your leaf',
+                      body: 'Take a clear, well-lit photo of a single tomato leaf — JPEG or PNG format.',
+                    },
+                    {
+                      num: '02',
+                      icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>,
+                      title: 'Upload your image',
+                      body: 'Drag the photo into the upload zone, or simply click to browse from your device.',
+                    },
+                    {
+                      num: '03',
+                      icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>,
+                      title: 'Run the analysis',
+                      body: 'Hit Analyse — our model identifies the condition from 10 possible diagnoses in seconds.',
+                    },
+                    {
+                      num: '04',
+                      icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /></svg>,
+                      title: 'Review your treatment plan',
+                      body: 'Receive a full report with the disease name, confidence score, and recommended action steps.',
+                    },
+                  ].map(({ num, icon, title, body }, idx, arr) => (
+                    <div className="pipeline-step-v3 reveal-child" key={num} onClick={triggerHaptic} style={{ cursor: 'pointer' }}>
+                      <div className="psv3-left">
+                        <div className="psv3-icon-box">
+                          {icon}
+                        </div>
+                        <div className="psv3-num-badge">{num}</div>
+                        {idx < arr.length - 1 && <div className="psv3-connector" />}
+                      </div>
+                      <div className="psv3-body">
+                        <div className="psv3-title">{title}</div>
+                        <div className="psv3-desc">{body}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="pipeline-decoration">
+                  <svg width="300" height="400" viewBox="0 0 100 120" fill="none" preserveAspectRatio="xMidYMid meet">
+                    <path d="M50 100C50 100 30 70 30 40C30 10 50 0 50 0C50 0 70 10 70 40C70 70 50 100 50 100Z" fill="#10b981" fillOpacity="0.03"/>
+                    <path d="M50 100C50 100 70 80 85 80C100 80 100 90 100 90C100 90 95 105 80 110C65 115 50 100 50 100Z" fill="#10b981" fillOpacity="0.05"/>
+                    <path d="M50 80C50 80 30 65 15 65C0 65 0 75 0 75C0 75 5 85 20 90C35 95 50 80 50 80Z" fill="#10b981" fillOpacity="0.04"/>
+                    <path d="M50 100L50 120" stroke="#10b981" strokeWidth="0.5" strokeOpacity="0.1"/>
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Detectable diseases — upgraded visual tags */}
-          <div className="disease-list reveal-right" data-stagger="">
-            <div className="disease-header">
-              <div className="pipeline-eyebrow">Detectable Conditions</div>
-              <div className="disease-count-badge">10 conditions</div>
+          <div className="conditions-section reveal-blur">
+            <div className="conditions-header">
+              <div className="conditions-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2"><path d="M12 2L4.5 20.29C5.21 20.73 6.07 21 7 21C10.87 21 14 17.87 14 14V2H12ZM14 14C14 17.87 17.13 21 21 21C21.93 21 22.79 20.73 23.5 20.29L16 2V14Z"/></svg>
+              </div>
+              <div className="conditions-title">DETECTABLE CONDITIONS</div>
+              <div className="conditions-badge">10 conditions</div>
             </div>
-            <div className="disease-tags">
+            <div className="conditions-grid">
+              {/* Detectable conditions pills with haptics */}
               {[
-                { name: 'Bacterial Spot', dot: '#e05a3a' },
-                { name: 'Early Blight', dot: '#c97b3a' },
-                { name: 'Late Blight', dot: '#b85c30' },
-                { name: 'Leaf Mold', dot: '#a67c52' },
-                { name: 'Septoria Leaf Spot', dot: '#d4863a' },
-                { name: 'Spider Mites', dot: '#c97b3a' },
-                { name: 'Target Spot', dot: '#b07040' },
-                { name: 'Tomato Mosaic Virus', dot: '#e05a3a' },
-                { name: 'Yellow Leaf Curl Virus', dot: '#d4a03a' },
-                { name: 'Healthy', dot: '#6aab5e' },
+                { name: 'Bacterial Spot', dot: '#ef4444' },
+                { name: 'Early Blight', dot: '#10b981' },
+                { name: 'Late Blight', dot: '#10b981' },
+                { name: 'Leaf Mold', dot: '#047857' },
+                { name: 'Septoria Leaf Spot', dot: '#34d399' },
+                { name: 'Spider Mites', dot: '#10b981' },
+                { name: 'Target Spot', dot: '#065f46' },
+                { name: 'Tomato Mosaic Virus', dot: '#ef4444' },
+                { name: 'Yellow Leaf Curl Virus', dot: '#14b8a6' },
+                { name: 'Healthy', dot: '#84cc16' },
               ].map(({ name, dot }) => (
-                <span className="disease-tag reveal-child" key={name}>
-                  <span className="disease-dot" style={{ background: dot }} />
+                <div className="condition-pill" key={name} onClick={triggerHaptic}>
+                  <div className="condition-dot" style={{ background: dot }} />
                   {name}
-                </span>
+                </div>
               ))}
             </div>
           </div>
@@ -608,68 +631,93 @@ export default function App() {
 
       {/* ── STATS BAND REMOVED ── */}
 
-      {/* ── UPLOAD SECTION with perspective tilt ── */}
+            {/* ── UPLOAD SECTION with perspective tilt ── */}
       <section className="upload-section" id="analyse" >
-        <div className="section-inner">
-          <div className="section-eyebrow-lt reveal-blur">Disease Detection</div>
-          <h2 className="section-title reveal-blur">
+        <div className="section-inner" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div className="section-eyebrow-lt reveal-blur" style={{ color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '16px' }}>
+            — DISEASE DETECTION 
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h4v4H4zM16 4h4v4h-4zM4 16h4v4H4zM16 16h4v4h-4z"/><path d="M9 12h6M12 9v6"/></svg>
+          </div>
+          <h2 className="section-title reveal-blur" style={{ color: '#0b2414', fontSize: '3rem', fontWeight: '800', lineHeight: '1.1', marginBottom: '16px' }}>
             Drop your leaf.<br />Get your diagnosis.
           </h2>
-          <p className="section-sub reveal-blur">
-            Our system has learned from thousands of tomato leaf photos
-            to identify 10 different conditions. Simply upload and let it work.
+          <p className="section-sub reveal-blur" style={{ color: '#4b5563', marginBottom: '40px', maxWidth: '500px', margin: '0 auto 40px', lineHeight: '1.6' }}>
+            Our system has learned from thousands of tomato leaf photos<br/>to identify 10 different conditions. Simply upload and let it work.
           </p>
 
-          <div className="upload-card reveal-tilt">
+          <div className="upload-card reveal-tilt" style={{ background: '#fff', borderRadius: '20px', padding: '24px', boxShadow: '0 10px 40px rgba(0,0,0,0.08)', width: '100%', maxWidth: '700px' }}>
             <div
               className={`dropzone${dragging ? ' dragging' : ''}`}
               onClick={() => inputRef.current?.click()}
               onDragOver={e => { e.preventDefault(); setDragging(true) }}
               onDragLeave={() => setDragging(false)}
               onDrop={onDrop}
+              style={{ position: 'relative', border: '2px dashed #10b981', borderRadius: '12px', padding: '60px 20px', background: 'rgba(16,185,129,0.03)', cursor: 'pointer', overflow: 'hidden' }}
             >
               <input ref={inputRef} type="file" accept="image/jpeg,image/png"
                 style={{ display: 'none' }} onChange={e => pick(e.target.files[0])} />
-              <div className={`dz-ring ${preview ? 'success-pulse' : ''}`}>
+              
+              <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div className={`dz-ring ${preview ? 'success-pulse' : ''}`} style={{ width: '64px', height: '64px', background: '#e6f7ef', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                  {preview
+                    ? <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="32" height="32"><path d="M20 6L9 17l-5-5" /></svg>
+                    : <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="32" height="32"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                  }
+                </div>
                 {preview
-                  ? <svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="30" height="30"><path d="M20 6L9 17l-5-5" /></svg>
-                  : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="30" height="30"><rect x="3" y="3" width="18" height="18" rx="3" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>
+                  ? <><div style={{ color: '#111827', fontWeight: '600' }} title={file?.name}>{file?.name}</div>
+                    <div style={{ color: '#6b7280', fontSize: '0.9rem', marginTop: '8px' }}>Click to change image</div></>
+                  : <><div style={{ color: '#111827', fontWeight: '500', fontSize: '1.1rem' }}>
+                    <span style={{ color: '#10b981' }}>Click to upload</span> or drag &amp; drop
+                  </div>
+                    <div style={{ color: '#6b7280', fontSize: '0.9rem', marginTop: '8px' }}>JPEG or PNG · Tomato leaves only</div></>
                 }
               </div>
-              {preview
-                ? <><div className="dz-filename" title={file?.name}>{file?.name}</div>
-                  <div className="dz-hint-text">Click to change image</div></>
-                : <><div className="dz-primary">
-                  <span>Click to upload</span> or drag &amp; drop
-                </div>
-                  <div className="dz-hint-text">JPEG or PNG · Tomato leaves only</div></>
-              }
+              
+              {/* Bottom wave decoration */}
+              <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '40px', background: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 1200 120\' preserveAspectRatio=\'none\'%3E%3Cpath d=\'M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V95.8C59.71,118.08,130.83,115.11,192.17,100.2,236.43,89.44,279.37,71.55,321.39,56.44Z\' fill=\'%2310b981\' fill-opacity=\'0.15\'/%3E%3C/svg%3E") no-repeat center bottom', backgroundSize: '100% 100%' }} />
             </div>
 
             {preview && (
-              <div className="preview">
-                <img src={preview} alt="Leaf preview" className="preview-image-anim" />
+              <div className="preview" style={{ marginTop: '20px', borderRadius: '12px', overflow: 'hidden' }}>
+                <img src={preview} alt="Leaf preview" className="preview-image-anim" style={{ width: '100%', maxHeight: '300px', objectFit: 'cover' }} />
               </div>
             )}
 
-            <hr className="upload-divider" />
-
-            <div className="upload-footer">
-              <div className="upload-meta" title={file?.name}>
+            <div className="upload-footer" style={{ marginTop: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 8px' }}>
+              <div className="upload-meta" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#374151', fontSize: '0.95rem' }} title={file?.name}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                 {file
-                  ? <><strong>{file.name}</strong> · {(file.size / 1024).toFixed(1)} KB</>
-                  : 'No file selected'}
+                  ? <span><strong>{file.name}</strong> · {(file.size / 1024).toFixed(1)} KB</span>
+                  : <span>No file selected</span>}
               </div>
               {file && (
-                <button className="btn-analyse-inline" onClick={analyse} disabled={loading}>
+                <button className="btn-analyse-inline" onClick={() => { triggerHaptic(); analyse(); }} disabled={loading} style={{ background: '#10b981', color: '#fff', border: 'none', padding: '8px 24px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}>
                   {loading
-                    ? <><span className="spinner" />Analysing…</>
+                    ? <><span className="spinner" style={{ width: '16px', height: '16px', marginRight: '8px', borderTopColor: '#fff', display: 'inline-block', verticalAlign: 'middle' }} />Analysing…</>
                     : 'Analyse'}
                 </button>
               )}
             </div>
 
-            {error && <div className="error-box">{error}</div>}
+            {error && <div className="error-box" style={{ marginTop: '16px', padding: '12px', background: '#fef2f2', color: '#ef4444', borderRadius: '8px', fontSize: '0.9rem' }}>{error}</div>}
+          </div>
+
+          {/* Feature Badges below upload */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '32px', marginTop: '32px', flexWrap: 'wrap' }}>
+            {[
+              { label: `AI Powered\nDetection`, icon: <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M12 8v8"/><path d="M8 12h8"/></svg> },
+              { label: `Accurate\nResults`, icon: <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg> },
+              { label: `Instant\nAnalysis`, icon: <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
+              { label: `Secure &\nPrivate`, icon: <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> }
+            ].map((f, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left' }}>
+                <div style={{ background: 'rgba(16,185,129,0.1)', padding: '10px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: '24px', height: '24px' }}>{f.icon}</div>
+                </div>
+                <div style={{ fontSize: '0.85rem', fontWeight: '600', color: '#111827', lineHeight: '1.3', whiteSpace: 'pre-line' }}>{f.label}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section >
@@ -680,17 +728,16 @@ export default function App() {
           <section className="result-section" id="results">
             <div className="result-inner">
               <div className="result-header reveal-blur">
-                <div className="result-tag">Diagnosis</div>
+                <div className="result-tag"><div className="tag-dot" />Diagnosis</div>
                 <div className="result-class-name">{formatClass(result.predicted_class)}</div>
-                <div className="result-conf">Certainty: {result.confidence}</div>
               </div>
 
               <div className="result-cards" data-stagger="">
-                <TiltCard className="rcard reveal-scale reveal-child">
+                <TiltCard className="rcard reveal-scale reveal-child" onClick={triggerHaptic}>
                   <div className="rcard-label">Predicted Disease</div>
                   <div className="rcard-val">{formatClass(result.predicted_class)}</div>
                 </TiltCard>
-                <TiltCard className="rcard reveal-scale reveal-child" style={{ transitionDelay: '100ms' }}>
+                <TiltCard className="rcard reveal-scale reveal-child" style={{ transitionDelay: '100ms' }} onClick={triggerHaptic}>
                   <div className="rcard-label">Certainty Score</div>
                   <div className="rcard-val green">{result.confidence}</div>
                 </TiltCard>
@@ -699,55 +746,88 @@ export default function App() {
               {/* LLM Recommendations Section */}
               <div className="llm-section reveal-blur">
                 <div className="llm-header">
-                  <div className="llm-badge">Smart Assistant</div>
-                  <h3 className="llm-title">Treatment Recommendations</h3>
+                  <div className="llm-badge-v2">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.6H22l-6.2 4.5L18.2 22l-6.2-4.5L5.8 22l2.4-7.9L2 9.6h7.6L12 2z"/></svg>
+                    SMART ASSISTANT
+                  </div>
+                  <h3 className="llm-title-v2">
+                    Treatment <span style={{ color: '#10b981' }}>Recommendations</span>
+                  </h3>
+                  <div className="llm-divider">
+                    <div className="line" />
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#10b981"><path d="M12 2L4.5 20.29C5.21 20.73 6.07 21 7 21C10.87 21 14 17.87 14 14V2H12ZM14 14C14 17.87 17.13 21 21 21C21.93 21 22.79 20.73 23.5 20.29L16 2V14Z"/></svg>
+                    <div className="line" />
+                  </div>
                 </div>
 
-                {!recommendations && !recLoading ? (
-                  <div className="llm-prompt">
-                    <button
-                      className="btn-analyse-inline"
-                      onClick={() => fetchRecommendations(formatClass(result.predicted_class))}
-                    >
-                      Get Treatment Recommendations
-                    </button>
-                  </div>
-                ) : recLoading ? (
+                {recLoading ? (
                   <div className="llm-loading">
                     <div className="spinner" style={{ width: 24, height: 24, borderTopColor: 'var(--accent)' }} />
                     <span>Consulting plant expert...</span>
                   </div>
                 ) : recommendations ? (
-                  <div className="llm-grid" data-stagger="">
-                    <div className="llm-card reveal-child">
-                      <div className="llm-icon-wrapper symptoms">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+                  <>
+                    <div className="llm-grid-v2" data-stagger="">
+                      <div className="llm-card-v2 reveal-child" onClick={triggerHaptic} style={{ cursor: 'pointer' }}>
+                        <div className="llm-card-header">
+                          <div className="llm-icon-box symptoms">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+                          </div>
+                          <div className="llm-card-meta">
+                            <div className="llm-tag symptoms">SYMPTOMS</div>
+                            <div className="llm-line symptoms" />
+                          </div>
+                        </div>
+                        <p className="llm-p">{recommendations.symptoms}</p>
                       </div>
-                      <div className="llm-card-tag">Symptoms</div>
-                      <p>{recommendations.symptoms}</p>
-                    </div>
-                    <div className="llm-card reveal-child">
-                      <div className="llm-icon-wrapper causes">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
+
+                      <div className="llm-card-v2 reveal-child" onClick={triggerHaptic} style={{ cursor: 'pointer' }}>
+                        <div className="llm-card-header">
+                          <div className="llm-icon-box causes">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
+                          </div>
+                          <div className="llm-card-meta">
+                            <div className="llm-tag causes">CAUSES</div>
+                            <div className="llm-line causes" />
+                          </div>
+                        </div>
+                        <p className="llm-p">{recommendations.causes}</p>
                       </div>
-                      <div className="llm-card-tag">Causes</div>
-                      <p>{recommendations.causes}</p>
-                    </div>
-                    <div className="llm-card reveal-child">
-                      <div className="llm-icon-wrapper organic">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 3.5 1 8h-3c-1 0-3 2-3 2a7 7 0 0 1-3 8z" /><path d="M11 20a7 7 0 0 1-5-2.1c1.2-1.9 2-3.4 1-5.1" /><path d="M11 13a7 7 0 0 0 2-4.1" /></svg>
+
+                      <div className="llm-card-v2 reveal-child" onClick={triggerHaptic} style={{ cursor: 'pointer' }}>
+                        <div className="llm-card-header">
+                          <div className="llm-icon-box organic">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 3.5 1 8h-3c-1 0-3 2-3 2a7 7 0 0 1-3 8z" /></svg>
+                          </div>
+                          <div className="llm-card-meta">
+                            <div className="llm-tag organic">ORGANIC TREATMENT</div>
+                            <div className="llm-line organic" />
+                          </div>
+                        </div>
+                        <p className="llm-p">{recommendations.organic}</p>
                       </div>
-                      <div className="llm-card-tag green">Organic Treatment</div>
-                      <p>{recommendations.organic}</p>
-                    </div>
-                    <div className="llm-card reveal-child">
-                      <div className="llm-icon-wrapper chemical">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
+
+                      <div className="llm-card-v2 reveal-child" onClick={triggerHaptic} style={{ cursor: 'pointer' }}>
+                        <div className="llm-card-header">
+                          <div className="llm-icon-box chemical">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="6" y="8" width="12" height="12" rx="2"/><path d="M9 8V5a3 3 0 0 1 6 0v3"/></svg>
+                          </div>
+                          <div className="llm-card-meta">
+                            <div className="llm-tag chemical">CHEMICAL TREATMENT</div>
+                            <div className="llm-line chemical" />
+                          </div>
+                        </div>
+                        <p className="llm-p">{recommendations.chemical}</p>
                       </div>
-                      <div className="llm-card-tag rose">Chemical Treatment</div>
-                      <p>{recommendations.chemical}</p>
                     </div>
-                  </div>
+
+                    <div className="llm-footer-banner reveal-blur" onClick={triggerHaptic} style={{ cursor: 'pointer' }}>
+                      <div className="llm-footer-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+                      </div>
+                      <p>Follow these recommendations and monitor your plants regularly for the best results.</p>
+                    </div>
+                  </>
                 ) : null}
               </div>
 
@@ -771,11 +851,11 @@ export default function App() {
           <div className="footer-brand">
             <div className="footer-brand-name">
               <img
-                src="https://freepnglogo.com/images/all_img/1723808808meta-logo-transparent-PNG.png"
-                alt="KrishiRakshak logo"
+                src="/logo.jpeg"
+                alt="Samatva Krishi logo"
                 className="nav-logo-img"
               />
-              KrishiRakshak AI
+              Samatva Krishi AI
             </div>
             <p>A smart, easy-to-use tool for tomato leaf disease detection, providing instant insights and advice for farmers and gardeners.</p>
           </div>
@@ -800,7 +880,7 @@ export default function App() {
           </div>
         </div>
         <div className="footer-bottom">
-          <span>© 2026 KrishiRakshak AI. All rights reserved.</span>
+          <span>© 2026 Samatva Krishi AI. All rights reserved.</span>
           <span>Smart AI · Fast · Reliable · Secure</span>
         </div>
       </footer>
